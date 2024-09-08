@@ -2,7 +2,9 @@ package biz
 
 import (
 	"context"
+	"crypto/md5"
 	"errors"
+	"github.com/anaskhan96/go-password-encoder"
 	"gorm.io/gorm"
 	"mic-study/account_srv/internal"
 	"mic-study/account_srv/model"
@@ -65,6 +67,7 @@ func (a *AccountServer) GetAccountByMobile(ctx context.Context, req *pb.MobileRe
 	}
 	return Model2Pb(account), nil
 }
+
 func (a *AccountServer) GetAccountById(ctx context.Context, req *pb.IdRequest) (*pb.AccountRes, error) {
 	var account model.Account
 	result := internal.DB.First(&account, req.Id)
@@ -73,12 +76,63 @@ func (a *AccountServer) GetAccountById(ctx context.Context, req *pb.IdRequest) (
 	}
 	return Model2Pb(account), nil
 }
+
 func (a *AccountServer) AddAccount(ctx context.Context, req *pb.AddAccountRequest) (*pb.AccountRes, error) {
-	return &pb.AccountRes{}, nil
+	var account model.Account
+	result := internal.DB.Where(&model.Account{Mobile: req.Mobile}).First(&account)
+	if result.RowsAffected == 1 {
+		return nil, errors.New(custom_error.AccountExists)
+	}
+	account.Mobile = req.Mobile
+	account.NickName = req.NickName
+	account.Role = 1
+	options := password.Options{
+		SaltLen:      16,
+		Iterations:   100,
+		KeyLen:       32,
+		HashFunction: md5.New,
+	}
+	salt, encodePwd := password.Encode(req.Password, &options)
+	account.Salt = salt
+	account.Password = encodePwd
+	r := internal.DB.Create(&account)
+	if r.Error != nil {
+		return nil, errors.New(custom_error.InternalError)
+	}
+	return Model2Pb(account), nil
 }
+
 func (a *AccountServer) UpdateAccount(ctx context.Context, req *pb.UpdateAccountRequest) (*pb.UpdateAccountRes, error) {
+	var account model.Account
+	res := internal.DB.First(&account, req.Id)
+	if res.RowsAffected == 0 {
+		return nil, errors.New(custom_error.AccountNotFound)
+	}
+	account.Mobile = req.Mobile
+	account.NickName = req.NickName
+	account.Gender = req.Gender
+	res = internal.DB.Save(&account)
+	if res.Error != nil {
+		return nil, errors.New(custom_error.InternalError)
+	}
 	return &pb.UpdateAccountRes{Result: true}, nil
 }
+
 func (a *AccountServer) CheckPassword(ctx context.Context, req *pb.CheckPasswordRequest) (*pb.CheckPasswordRes, error) {
-	return &pb.CheckPasswordRes{Result: true}, nil
+	var account model.Account
+	res := internal.DB.First(&account, req.AccountId)
+	if res.Error != nil {
+		return nil, errors.New(custom_error.InternalError)
+	}
+	if account.Salt == "" {
+		return nil, errors.New(custom_error.SaltError)
+	}
+	options := password.Options{
+		SaltLen:      16,
+		Iterations:   100,
+		KeyLen:       32,
+		HashFunction: md5.New,
+	}
+	r := password.Verify(req.Password, account.Salt, account.Password, &options)
+	return &pb.CheckPasswordRes{Result: r}, nil
 }
