@@ -4,18 +4,29 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/dchest/captcha"
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"io"
 	"io/ioutil"
+	"mic-study/internal"
+	"net/http"
 	"os"
+	"time"
 )
 
-func GetCaptcha() error {
+func CaptchaHandler(c *gin.Context) {
+	mobile, ok := c.GetQuery("mobile")
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"msg": "参数错误",
+		})
+		return
+	}
 	fileName := "data.png"
 	f, err := os.Create(fileName)
 	if err != nil {
 		zap.S().Error("获取验证码失败")
-		return err
+		return
 	}
 	defer f.Close()
 	var w io.WriterTo
@@ -23,8 +34,8 @@ func GetCaptcha() error {
 	w = captcha.NewImage("", d, captcha.StdWidth, captcha.StdHeight)
 	_, err = w.WriteTo(f)
 	if err != nil {
-		zap.S().Error("GetCaptcha() 失败")
-		return err
+		zap.S().Error("CaptchaHandler() 失败")
+		return
 	}
 	fmt.Println(d)
 	captcha := ""
@@ -32,13 +43,16 @@ func GetCaptcha() error {
 		captcha += string(item)
 	}
 	fmt.Println(captcha)
+	internal.RedisClient.Set(c, mobile, captcha, 180*time.Second)
 	b64, err := GetBase64(fileName)
 	if err != nil {
-		zap.S().Error("GetCaptcha() 失败")
-		return err
+		zap.S().Error("CaptchaHandler() 失败")
+		return
 	}
 	fmt.Println(b64)
-	return nil
+	c.JSON(http.StatusOK, gin.H{
+		"captcha": b64,
+	})
 }
 
 func GetBase64(fileName string) (string, error) {

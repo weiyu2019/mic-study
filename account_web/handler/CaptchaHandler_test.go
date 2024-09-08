@@ -3,7 +3,7 @@ package handler
 import "testing"
 
 func TestGetCaptcha(t *testing.T) {
-	err := GetCaptcha()
+	err := CaptchaHandler()
 	if err != nil {
 		panic(err)
 	}
