@@ -1,10 +1,17 @@
+db:
+  host: '127.0.0.1'
+  port: 3306
+  dbName: "account"
+  userName: "root"
+  password: 123456
+
 redis:
   host: '127.0.0.1'
-  post: 6379
+  port: 6379
 
 consul:
   host: '127.0.0.1'
-  post: 8500
+  port: 8500
 
 
 account_srv:
@@ -12,7 +19,7 @@ account_srv:
   host: '127.0.0.1'
   port: 9095
   tags:
-    - happy
+    - wy
     - account_srv
 
 account_web:
@@ -20,5 +27,5 @@ account_web:
   host: '127.0.0.1'
   port: 8081
   tags:
-    - happy
+    - wy
     - account_web

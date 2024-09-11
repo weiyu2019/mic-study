@@ -15,6 +15,14 @@ import (
 var DB *gorm.DB
 var err error
 
+type DBConfig struct {
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	DBName   string `mapstructure:"dbName"`
+	Username string `mapstructure:"userName"`
+	Password string `mapstructure:"password"`
+}
+
 func InitDB() {
 	newLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags),
@@ -24,7 +32,8 @@ func InitDB() {
 			IgnoreRecordNotFoundError: true,
 			Colorful:                  true,
 		})
-	conn := fmt.Sprintf("%s:%s@(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local", "root", "123456", "127.0.0.1", "3306", "account")
+	conn := fmt.Sprintf("%s:%s@(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local", ViperConf.DBConfig.Username, ViperConf.DBConfig.Password,
+		ViperConf.DBConfig.Host, ViperConf.DBConfig.Port, ViperConf.DBConfig.DBName)
 	DB, err = gorm.Open(mysql.Open(conn), &gorm.Config{
 		Logger:         newLogger,
 		NamingStrategy: schema.NamingStrategy{SingularTable: true},
