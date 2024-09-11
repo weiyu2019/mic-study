@@ -5,14 +5,18 @@ import (
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/hashicorp/consul/api"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"mic-study/account_srv/proto/pb"
 	"mic-study/account_web/req"
 	"mic-study/account_web/res"
 	"mic-study/custom_error"
+	"mic-study/internal"
 	"mic-study/jwt_op"
 	"mic-study/log"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -32,20 +36,65 @@ func HandleError(err error) string {
 	return ""
 }
 
-func AccountListHandler(c *gin.Context) {
-	conn, err := grpc.Dial("127.0.0.1:8080", grpc.WithInsecure())
+func init() {
+	err := initConsul()
+	if err != nil {
+		panic(err)
+	}
+	err = initGrpcClient()
+	if err != nil {
+		panic(err)
+	}
+}
+func initConsul() error {
+	defaultConfig := api.DefaultConfig()
+	consulAddr := fmt.Sprintf("%s:%d",
+		internal.ViperConf.ConsulConfig.Host,
+		internal.ViperConf.ConsulConfig.Port)
+	defaultConfig.Address = consulAddr
+	consulClient, err := api.NewClient(defaultConfig)
+	if err != nil {
+		zap.S().Error("AccountListHandler, 创建consul client失败: " + err.Error())
+		return err
+	}
+
+	serviceList, err := consulClient.Agent().ServicesWithFilter("Service=account-srv")
+	if err != nil {
+		zap.S().Error("AccountListHandler, 创建consul 获取服务列表失败: " + err.Error())
+		return err
+	}
+	for _, v := range serviceList {
+		accountSrvHost = v.Address
+		accountSrvPort = v.Port
+	}
+	return nil
+}
+
+func initGrpcClient() error {
+	grpcAddr := fmt.Sprintf("%s:%d", accountSrvHost, accountSrvPort)
+	conn, err := grpc.Dial(grpcAddr, grpc.WithInsecure())
 	if err != nil {
 		s := fmt.Sprintf("AccountListHandler-Grpc拨号重构:%s", err.Error())
 		log.Logger.Info(s)
-		e := HandleError(err)
-		c.JSON(http.StatusOK, gin.H{
-			"msg": e,
-		})
+		return err
 	}
-	client := pb.NewAccountServiceClient(conn)
+	client = pb.NewAccountServiceClient(conn)
+	return nil
+}
+
+var accountSrvHost string
+var accountSrvPort int
+var client pb.AccountServiceClient
+
+func AccountListHandler(c *gin.Context) {
+	pageNoStr := c.DefaultQuery("pageNo", "1")
+	pageSizeStr := c.DefaultQuery("pageSize", "3")
+	pageNo, err := strconv.ParseInt(pageNoStr, 10, 32)
+	pageSize, err := strconv.ParseInt(pageSizeStr, 10, 32)
+
 	r, err := client.GetAccountList(c, &pb.PagingRequest{
-		PageNo:   1,
-		PageSize: 3,
+		PageNo:   uint32(pageNo),
+		PageSize: uint32(pageSize),
 	})
 	if err != nil {
 		s := fmt.Sprintf("AccountListHandler-GetAccountList:%s", err.Error())
