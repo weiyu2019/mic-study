@@ -32,8 +32,8 @@ func InitDB() {
 			IgnoreRecordNotFoundError: true,
 			Colorful:                  true,
 		})
-	conn := fmt.Sprintf("%s:%s@(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local", ViperConf.DBConfig.Username, ViperConf.DBConfig.Password,
-		ViperConf.DBConfig.Host, ViperConf.DBConfig.Port, ViperConf.DBConfig.DBName)
+	conn := fmt.Sprintf("%s:%s@(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local", AppConf.DBConfig.Username, AppConf.DBConfig.Password,
+		AppConf.DBConfig.Host, AppConf.DBConfig.Port, AppConf.DBConfig.DBName)
 	DB, err = gorm.Open(mysql.Open(conn), &gorm.Config{
 		Logger:         newLogger,
 		NamingStrategy: schema.NamingStrategy{SingularTable: true},

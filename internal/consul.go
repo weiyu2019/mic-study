@@ -12,8 +12,8 @@ type ConsulConfig struct {
 
 func RegisterService(host, name, id string, port int, tags []string) error {
 	defaultConfig := api.DefaultConfig()
-	h := ViperConf.ConsulConfig.Host
-	p := ViperConf.ConsulConfig.Port
+	h := AppConf.ConsulConfig.Host
+	p := AppConf.ConsulConfig.Port
 
 	defaultConfig.Address = fmt.Sprintf("%s:%d", h, p)
 	client, err := api.NewClient(defaultConfig)
@@ -39,8 +39,8 @@ func RegisterService(host, name, id string, port int, tags []string) error {
 
 func GetServiceList() error {
 	defaultConfig := api.DefaultConfig()
-	h := ViperConf.ConsulConfig.Host
-	p := ViperConf.ConsulConfig.Port
+	h := AppConf.ConsulConfig.Host
+	p := AppConf.ConsulConfig.Port
 
 	defaultConfig.Address = fmt.Sprintf("%s:%d", h, p)
 	client, err := api.NewClient(defaultConfig)
@@ -61,8 +61,8 @@ func GetServiceList() error {
 
 func FilterService() error {
 	defaultConfig := api.DefaultConfig()
-	h := ViperConf.ConsulConfig.Host
-	p := ViperConf.ConsulConfig.Port
+	h := AppConf.ConsulConfig.Host
+	p := AppConf.ConsulConfig.Port
 
 	defaultConfig.Address = fmt.Sprintf("%s:%d", h, p)
 	client, err := api.NewClient(defaultConfig)

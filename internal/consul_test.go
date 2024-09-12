@@ -5,11 +5,11 @@ import (
 )
 
 func TestRegisterService(t *testing.T) {
-	err := RegisterService(ViperConf.AccountWebConfig.Host,
-		ViperConf.AccountWebConfig.SrvName,
-		ViperConf.AccountWebConfig.SrvName,
-		ViperConf.AccountWebConfig.Port,
-		ViperConf.AccountWebConfig.Tags)
+	err := RegisterService(AppConf.AccountWebConfig.Host,
+		AppConf.AccountWebConfig.SrvName,
+		AppConf.AccountWebConfig.SrvName,
+		AppConf.AccountWebConfig.Port,
+		AppConf.AccountWebConfig.Tags)
 	if err != nil {
 		panic(err)
 	}

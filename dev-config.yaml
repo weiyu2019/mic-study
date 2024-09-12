@@ -1,31 +1,39 @@
-db:
-  host: '127.0.0.1'
-  port: 3306
-  dbName: "account"
-  userName: "root"
-  password: 123456
+nacos:
+  host: "127.0.0.1"
+  port: 8848
+  namespace: ""
+  dataid: "account.json"
+  group: "dev"
 
-redis:
-  host: '127.0.0.1'
-  port: 6379
-
-consul:
-  host: '127.0.0.1'
-  port: 8500
-
-
-account_srv:
-  srvName: "account_srv"
-  host: '127.0.0.1'
-  port: 9095
-  tags:
-    - wy
-    - account_srv
-
-account_web:
-  srvName: "account_web"
-  host: '127.0.0.1'
-  port: 8081
-  tags:
-    - wy
-    - account_web
+# 如果使用nacos，将配置保存到account.json里面
+#db:
+#  host: '127.0.0.1'
+#  port: 3306
+#  dbName: "account"
+#  userName: "root"
+#  password: 123456
+#
+#redis:
+#  host: '127.0.0.1'
+#  port: 6379
+#
+#consul:
+#  host: '127.0.0.1'
+#  port: 8500
+#
+#
+#account_srv:
+#  srvName: "account_srv"
+#  host: '127.0.0.1'
+#  port: 9095
+#  tags:
+#    - wy
+#    - account_srv
+#
+#account_web:
+#  srvName: "account_web"
+#  host: '127.0.0.1'
+#  port: 8081
+#  tags:
+#    - wy
+#    - account_web
