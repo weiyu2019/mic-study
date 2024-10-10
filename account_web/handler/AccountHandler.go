@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"github.com/hashicorp/consul/api"
+	_ "github.com/mbobakov/grpc-consul-resolver"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"mic-study/account_srv/proto/pb"
@@ -37,44 +37,21 @@ func HandleError(err error) string {
 }
 
 func init() {
-	err := initConsul()
+	err := initGrpcClient()
 	if err != nil {
 		panic(err)
 	}
-	err = initGrpcClient()
-	if err != nil {
-		panic(err)
-	}
-}
-func initConsul() error {
-	defaultConfig := api.DefaultConfig()
-	consulAddr := fmt.Sprintf("%s:%d",
-		internal.AppConf.ConsulConfig.Host,
-		internal.AppConf.ConsulConfig.Port)
-	defaultConfig.Address = consulAddr
-	consulClient, err := api.NewClient(defaultConfig)
-	if err != nil {
-		zap.S().Error("AccountListHandler, 创建consul client失败: " + err.Error())
-		return err
-	}
-
-	serviceList, err := consulClient.Agent().ServicesWithFilter("Service=account-srv")
-	if err != nil {
-		zap.S().Error("AccountListHandler, 创建consul 获取服务列表失败: " + err.Error())
-		return err
-	}
-	for _, v := range serviceList {
-		accountSrvHost = v.Address
-		accountSrvPort = v.Port
-	}
-	return nil
 }
 
 func initGrpcClient() error {
-	grpcAddr := fmt.Sprintf("%s:%d", accountSrvHost, accountSrvPort)
-	conn, err := grpc.Dial(grpcAddr, grpc.WithInsecure())
+	addr := fmt.Sprintf("%s:%d", internal.AppConf.ConsulConfig.Host, internal.AppConf.ConsulConfig.Port)
+	dialAddr := fmt.Sprintf("consul://%s/%s?wait=14", addr, internal.AppConf.AccountSrvConfig.SrvName)
+	conn, err := grpc.Dial(dialAddr, grpc.WithInsecure(), grpc.WithDefaultServiceConfig(`{"loadBalancingPolicy":"round_robin"}`))
 	if err != nil {
-		s := fmt.Sprintf("AccountListHandler-Grpc拨号重构:%s", err.Error())
+		zap.S().Fatal(err)
+	}
+	if err != nil {
+		s := fmt.Sprintf("AccountListHandler-Grpc拨号失败:%s", err.Error())
 		log.Logger.Info(s)
 		return err
 	}
@@ -82,8 +59,6 @@ func initGrpcClient() error {
 	return nil
 }
 
-var accountSrvHost string
-var accountSrvPort int
 var client pb.AccountServiceClient
 
 func AccountListHandler(c *gin.Context) {
